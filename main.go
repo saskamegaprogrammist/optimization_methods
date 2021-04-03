@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/saskamegaprogrammist/optimization_methods/constraint_methods"
 	"github.com/saskamegaprogrammist/optimization_methods/interpolation_search"
 	"github.com/saskamegaprogrammist/optimization_methods/la_methods"
 	"github.com/saskamegaprogrammist/optimization_methods/many_dimension_search"
@@ -9,18 +10,6 @@ import (
 	"math"
 	"time"
 )
-
-func rozenbrokeFunction(a float64, b float64, f float64, xs []float64) float64 {
-	var result float64
-	n := len(xs)
-	for i, x := range xs {
-		if i != n-1 {
-			result += a*math.Pow(math.Pow(x, 2)-xs[i+1], 2) + b*math.Pow(x-1, 2)
-		}
-	}
-	result += f
-	return result
-}
 
 func rozenbrokeOneDimensionFunction(a float64, b float64, f float64) func(xs []float64) float64 {
 	return func(xs []float64) float64 {
@@ -36,7 +25,34 @@ func rozenbrokeOneDimensionFunction(a float64, b float64, f float64) func(xs []f
 	}
 }
 
-func rozenbrokeFirstGrad(a float64, b float64, f float64) func(xs []float64) float64 {
+func rozenbrokeOneDimensionFunction2() func(xs []float64) float64 {
+	var a, b, f float64
+	a = 158
+	b = 2
+	f = 40
+	return func(xs []float64) float64 {
+		var result float64
+		n := len(xs)
+		for i, x := range xs {
+			if i != n-1 {
+				result += a*math.Pow(math.Pow(x, 2)-xs[i+1], 2) + b*math.Pow(x-1, 2)
+			}
+		}
+		result += f
+		return result
+	}
+}
+
+func rozenbrokeFirstGrad(a, b, f float64) func(xs []float64) float64 {
+	return func(xs []float64) float64 {
+		return a*2*2*xs[0]*(math.Pow(xs[0], 2)-xs[1]) + 2*b*(xs[0]-1)
+	}
+}
+
+func rozenbrokeFirstGrad2() func(xs []float64) float64 {
+	var a, b float64
+	a = 158
+	b = 2
 	return func(xs []float64) float64 {
 		return a*2*2*xs[0]*(math.Pow(xs[0], 2)-xs[1]) + 2*b*(xs[0]-1)
 	}
@@ -48,7 +64,23 @@ func rozenbrokeFirstGradFirst(a float64, b float64, f float64) func(xs []float64
 	}
 }
 
+func rozenbrokeFirstGradFirst2() func(xs []float64) float64 {
+	var a, b float64
+	a = 158
+	b = 2
+	return func(xs []float64) float64 {
+		return a*2*2*(3*math.Pow(xs[0], 2)-xs[1]) + 2*b
+	}
+}
+
 func rozenbrokeFirstGradSecond(a float64, b float64, f float64) func(xs []float64) float64 {
+	return func(xs []float64) float64 {
+		return (-1) * a * 2 * 2 * xs[0]
+	}
+}
+
+func rozenbrokeFirstGradSecond2() func(xs []float64) float64 {
+	var a float64 = 158
 	return func(xs []float64) float64 {
 		return (-1) * a * 2 * 2 * xs[0]
 	}
@@ -96,9 +128,36 @@ func rozenbrokeThirdGradThird(a float64, b float64, f float64) func(xs []float64
 	}
 }
 
+func rozenbroke2SecondGrad() func(xs []float64) float64 {
+	var a float64 = 158
+	return func(xs []float64) float64 {
+		return -a * 2 * (math.Pow(xs[0], 2) - xs[1])
+	}
+}
+
+func rozenbroke2SecondGradFirst() func(xs []float64) float64 {
+	var a float64 = 158
+	return func(xs []float64) float64 {
+		return -2 * 2 * a * xs[0]
+	}
+}
+
+func rozenbroke2SecondGradSecond() func(xs []float64) float64 {
+	var a float64 = 158
+	return func(xs []float64) float64 {
+		return 2 * a
+	}
+}
+
 func hess(a float64, b float64, f float64) func(xs []float64) la_methods.Matrix {
 	return func(xs []float64) la_methods.Matrix {
 		return hessian(xs, a, b, f)
+	}
+}
+
+func hess2() func(xs []float64) la_methods.Matrix {
+	return func(xs []float64) la_methods.Matrix {
+		return hessian2(xs)
 	}
 }
 
@@ -113,6 +172,17 @@ func hessian(xs []float64, a float64, b float64, f float64) la_methods.Matrix {
 	hess.Points[1][2] = rozenbrokeSecondGradThird(a, b, f)(xs)
 	hess.Points[2][1] = rozenbrokeThirdGradSecond(a, b, f)(xs)
 	hess.Points[2][1] = rozenbrokeThirdGradThird(a, b, f)(xs)
+	return hess
+}
+
+func hessian2(xs []float64) la_methods.Matrix {
+	var hess la_methods.Matrix
+	dim := len(xs)
+	hess.Init(dim, dim)
+	hess.Points[0][0] = rozenbrokeFirstGradFirst2()(xs)
+	hess.Points[0][1] = rozenbrokeFirstGradSecond2()(xs)
+	hess.Points[1][0] = rozenbroke2SecondGradFirst()(xs)
+	hess.Points[1][1] = rozenbroke2SecondGradSecond()(xs)
 	return hess
 }
 
@@ -283,7 +353,7 @@ func third() {
 	nms.Init([]float64{0, 0, 0}, 0.1, 3, precision, rFunc)
 	xMin, yMin, err = nms.Solve()
 	if err != nil {
-		fmt.Printf("error solving hooke jeeves: %v\n", err)
+		fmt.Printf("error solving nelder mead: %v\n", err)
 		return
 	}
 	timeEnd = time.Now()
@@ -387,7 +457,58 @@ func fourth() {
 	fmt.Printf("fast gradient descent fibonacci algorithm took : %v\n", timeEnd.Sub(timeStart))
 
 	timeStart = time.Now()
-	frs.Init([]float64{0, 0, 0}, alphaPrecision, 3, precision, precision, alphaPrecision, oneDStepFib, maxIter, rFunc, gradFunctions, "break in two")
+	frs.Init([]float64{0, 0, 0}, alphaPrecision, 3, precision, precision, alphaPrecision, oneDStepFib, maxIter, rFunc, gradFunctions, "break in two", true)
+	xMin, yMin, err = frs.Solve()
+	if err != nil {
+		fmt.Printf("error solving pollak : %v\n", err)
+		return
+	}
+	timeEnd = time.Now()
+
+	fmt.Printf("minimum: %f\n", yMin)
+	for _, p := range xMin {
+		fmt.Printf("minimum point: %f ", p)
+
+	}
+	fmt.Println()
+	fmt.Printf("pollak break in two algorithm took : %v\n", timeEnd.Sub(timeStart))
+
+	timeStart = time.Now()
+	frs.Init([]float64{0, 0, 0}, 0.0001, 3, precision, precision, alphaPrecision, 0.01, maxIter, rFunc, gradFunctions, "golden ratio", true)
+	xMin, yMin, err = frs.Solve()
+	if err != nil {
+		fmt.Printf("error solving pollak : %v\n", err)
+		return
+	}
+	timeEnd = time.Now()
+
+	fmt.Printf("minimum: %f\n", yMin)
+	for _, p := range xMin {
+		fmt.Printf("minimum point: %f ", p)
+
+	}
+	fmt.Println()
+	fmt.Printf("pollak golden ratio algorithm took : %v\n", timeEnd.Sub(timeStart))
+
+	timeStart = time.Now()
+	frs.Init([]float64{0, 0, 0}, alphaPrecision, 3, precision, precision, alphaPrecision, oneDStepFib, maxIter, rFunc, gradFunctions, "fibonacci", true)
+	xMin, yMin, err = frs.Solve()
+	if err != nil {
+		fmt.Printf("error solving pollak : %v\n", err)
+		return
+	}
+	timeEnd = time.Now()
+
+	fmt.Printf("minimum: %f\n", yMin)
+	for _, p := range xMin {
+		fmt.Printf("minimum point: %f ", p)
+
+	}
+	fmt.Println()
+	fmt.Printf("pollak fibonacci algorithm took : %v\n", timeEnd.Sub(timeStart))
+
+	timeStart = time.Now()
+	frs.Init([]float64{0, 0, 0}, alphaPrecision, 3, precision, precision, alphaPrecision, oneDStepFib, maxIter, rFunc, gradFunctions, "break in two", false)
 	xMin, yMin, err = frs.Solve()
 	if err != nil {
 		fmt.Printf("error solving fletcher reeves : %v\n", err)
@@ -404,7 +525,7 @@ func fourth() {
 	fmt.Printf("fletcher reeves break in two algorithm took : %v\n", timeEnd.Sub(timeStart))
 
 	timeStart = time.Now()
-	frs.Init([]float64{0, 0, 0}, 0.0001, 3, precision, precision, alphaPrecision, 0.01, maxIter, rFunc, gradFunctions, "golden ratio")
+	frs.Init([]float64{0, 0, 0}, 0.0001, 3, precision, precision, alphaPrecision, 0.01, maxIter, rFunc, gradFunctions, "golden ratio", false)
 	xMin, yMin, err = frs.Solve()
 	if err != nil {
 		fmt.Printf("error solving fletcher reeves : %v\n", err)
@@ -421,7 +542,7 @@ func fourth() {
 	fmt.Printf("fletcher reeves golden ratio algorithm took : %v\n", timeEnd.Sub(timeStart))
 
 	timeStart = time.Now()
-	frs.Init([]float64{0, 0, 0}, alphaPrecision, 3, precision, precision, alphaPrecision, oneDStepFib, maxIter, rFunc, gradFunctions, "fibonacci")
+	frs.Init([]float64{0, 0, 0}, alphaPrecision, 3, precision, precision, alphaPrecision, oneDStepFib, maxIter, rFunc, gradFunctions, "fibonacci", false)
 	xMin, yMin, err = frs.Solve()
 	if err != nil {
 		fmt.Printf("error solving fletcher reeves : %v\n", err)
@@ -436,23 +557,6 @@ func fourth() {
 	}
 	fmt.Println()
 	fmt.Printf("fletcher reeves fibonacci algorithm took : %v\n", timeEnd.Sub(timeStart))
-
-	timeStart = time.Now()
-	frs.Init([]float64{0, 0, 0}, alphaPrecision, 3, precisionInterp, precisionInterp, precisionInterp, oneDStepInterp, maxIter, rFunc, gradFunctions, "square interpolation")
-	xMin, yMin, err = frs.Solve()
-	if err != nil {
-		fmt.Printf("error solving fletcher reeves : %v\n", err)
-		return
-	}
-	timeEnd = time.Now()
-
-	fmt.Printf("minimum: %f\n", yMin)
-	for _, p := range xMin {
-		fmt.Printf("minimum point: %f ", p)
-
-	}
-	fmt.Println()
-	fmt.Printf("fletcher reeves square interpolation algorithm took : %v\n", timeEnd.Sub(timeStart))
 
 	timeStart = time.Now()
 	dfps.Init([]float64{0, 0, 0}, alphaPrecision, 3, precisionInterp, precisionInterp, precisionInterp, oneDStepInterp, maxIter, rFunc, gradFunctions, "break in two")
@@ -540,6 +644,35 @@ func fourth() {
 	fmt.Printf("levenberg markkvadrat algorithm took : %v\n", timeEnd.Sub(timeStart))
 }
 
+func testLMS() {
+	var err error
+	var timeStart, timeEnd time.Time
+	var xMin []float64
+	var yMin float64
+
+	rFunc := rozenbrokeOneDimensionFunction(158, 2, 40)
+	gradFunctions := []func(xs []float64) float64{rozenbrokeFirstGrad(158, 2, 40),
+		rozenbrokeSecondGrad(158, 2, 40), rozenbrokeThirdGrad(158, 2, 40)}
+	hessian := hess(158, 2, 40)
+	var lms many_dimension_search.LevenbergMarkkvadratSearch
+	timeStart = time.Now()
+	lms.Init([]float64{0, 0, 0}, 3, rFunc, gradFunctions, hessian, 10000, 100000, 0.001)
+	xMin, yMin, err = lms.Solve()
+	if err != nil {
+		fmt.Printf("error solving levenberg markkvadrat method : %v\n", err)
+		return
+	}
+	timeEnd = time.Now()
+
+	fmt.Printf("minimum: %f\n", yMin)
+	for _, p := range xMin {
+		fmt.Printf("minimum point: %f ", p)
+
+	}
+	fmt.Println()
+	fmt.Printf("levenberg markkvadrat algorithm took : %v\n", timeEnd.Sub(timeStart))
+}
+
 func testInverted() {
 	var m la_methods.Matrix
 	_ = m.InitWithPoints(2, 2, [][]float64{{1, 1}, {5, 2}})
@@ -550,7 +683,174 @@ func testInverted() {
 	inv.Print()
 }
 
+func fifth() {
+	var err error
+	var timeStart, timeEnd time.Time
+	var xMin []float64
+	var yMin float64
+	precision := 0.001
+
+	rFunc := rozenbrokeOneDimensionFunction2()
+	gradFunctions := []func(xs []float64) float64{rozenbrokeFirstGrad2(),
+		rozenbroke2SecondGrad()}
+	hessian := hess2()
+
+	constraintExtFunc := constraintExtFunc(firstExtConstraintMod, secondExtConstraintMod, thirdExtConstraintMod)
+	constraintExtGradFunctions := []func(xs []float64, r float64) float64{constraintExtFuncFirstGrad(),
+		constraintExtFuncSecondGrad()}
+	hessianExtConstraint := hessConstraintExt()
+
+	constraintInt1Func := constraintInt1Func(firstConstraint, secondConstraint, thirdConstraint)
+	constraintInt1GradFunctions := []func(xs []float64, r float64) float64{constraintInt1FuncFirstGrad(),
+		constraintInt1FuncSecondGrad()}
+	hessianInt1Constraint := hessConstraintInt1()
+
+	constraintInt2Func := constraintInt2Func(firstConstraint, secondConstraint, thirdConstraint)
+	constraintInt2GradFunctions := []func(xs []float64, r float64) float64{constraintInt2FuncFirstGrad(),
+		constraintInt2FuncSecondGrad()}
+	hessianInt2Constraint := hessConstraintInt2()
+
+	constraintLagrangeFunc := constraintLagrangeFunc(firstLagrangeConstraintMod, secondLagrangeConstraintMod, thirdLagrangeConstraintMod)
+	constraintLagrangeGradFunctions := []func(xs []float64, r float64, m []float64) float64{constraintLagrangeFuncFirstGrad(),
+		constraintLagrangeFuncSecondGrad()}
+
+	var ep constraint_methods.Penalty
+	var pc constraint_methods.PenaltyCombined
+	var pl constraint_methods.PenaltyLagrange
+	//var gm constraint_methods.GradientMethod
+
+	timeStart = time.Now()
+	ep.Init([]float64{-4, -4}, 2, rFunc, []func(xs []float64) float64{firstExtConstraintMod, secondExtConstraintMod, thirdExtConstraintMod},
+		gradFunctions, hessian, constraintExtGradFunctions, hessianExtConstraint, constraintExtFunc, precision, 1.618, "hooke jeeves")
+
+	xMin, yMin, err = ep.Solve()
+	if err != nil {
+		fmt.Printf("error solving external penalty method : %v\n", err)
+		return
+	}
+	timeEnd = time.Now()
+
+	fmt.Printf("minimum: %f\n", yMin)
+	for _, p := range xMin {
+		fmt.Printf("minimum point: %f ", p)
+
+	}
+	fmt.Println()
+	fmt.Printf("external penalty algorithm took : %v\n", timeEnd.Sub(timeStart))
+
+	timeStart = time.Now()
+	ep.Init([]float64{-4, -4}, 2, rFunc, []func(xs []float64) float64{firstConstraint, secondConstraint, thirdConstraint},
+		gradFunctions, hessian, constraintInt1GradFunctions, hessianInt1Constraint, constraintInt1Func, precision, float64(1)/float64(10), "hooke jeeves")
+
+	xMin, yMin, err = ep.Solve()
+	if err != nil {
+		fmt.Printf("error solving internal penalty method : %v\n", err)
+		return
+	}
+	timeEnd = time.Now()
+
+	fmt.Printf("minimum: %f\n", yMin)
+	for _, p := range xMin {
+		fmt.Printf("minimum point: %f ", p)
+
+	}
+	fmt.Println()
+	fmt.Printf("internal penalty algorithm took : %v\n", timeEnd.Sub(timeStart))
+
+	//fmt.Println(constraintInt2Func([]float64{2, 2}, 1))
+
+	timeStart = time.Now()
+	ep.Init([]float64{0.5, 0.5}, 2, rFunc, []func(xs []float64) float64{firstConstraint, secondConstraint, thirdConstraint},
+		gradFunctions, hessian, constraintInt2GradFunctions, hessianInt2Constraint, constraintInt2Func, precision, float64(1)/float64(10), "nelder mead")
+
+	xMin, yMin, err = ep.Solve()
+	if err != nil {
+		fmt.Printf("error solving internal penalty method : %v\n", err)
+		return
+	}
+	timeEnd = time.Now()
+
+	fmt.Printf("minimum: %f\n", yMin)
+	for _, p := range xMin {
+		fmt.Printf("minimum point: %f ", p)
+
+	}
+	fmt.Println()
+	fmt.Printf("internal penalty algorithm took : %v\n", timeEnd.Sub(timeStart))
+
+	timeStart = time.Now()
+	pc.Init([]float64{-4, -4}, 2, rFunc,
+		gradFunctions, constraintExtGradFunctions, constraintInt1GradFunctions, constraintExtFunc, constraintInt1Func, precision, float64(1)/float64(10), float64(1)/float64(10), "hooke jeeves")
+
+	xMin, yMin, err = pc.Solve()
+	if err != nil {
+		fmt.Printf("error solving combined penalty method : %v\n", err)
+		return
+	}
+	timeEnd = time.Now()
+
+	fmt.Printf("minimum: %f\n", yMin)
+	for _, p := range xMin {
+		fmt.Printf("minimum point: %f ", p)
+
+	}
+	fmt.Println()
+	fmt.Printf("combined penalty algorithm took : %v\n", timeEnd.Sub(timeStart))
+
+	timeStart = time.Now()
+	pl.Init([]float64{-5, -5}, 2, rFunc,
+		gradFunctions, []func(xs []float64, r float64, m []float64) float64{firstLagrangeConstraintMod, secondLagrangeConstraintMod, thirdLagrangeConstraintMod}, constraintLagrangeGradFunctions, constraintLagrangeFunc, []float64{2, 2, 2}, precision, 1.6, "hooke jeeves")
+
+	xMin, yMin, err = pl.Solve()
+	if err != nil {
+		fmt.Printf("error solving lagrange penalty method : %v\n", err)
+		return
+	}
+	timeEnd = time.Now()
+
+	fmt.Printf("minimum: %f\n", yMin)
+	for _, p := range xMin {
+		fmt.Printf("minimum point: %f ", p)
+
+	}
+	fmt.Println()
+	fmt.Printf("lagrange penalty algorithm took : %v\n", timeEnd.Sub(timeStart))
+}
+
+func sixth() {
+	var err error
+	var timeStart, timeEnd time.Time
+	var xMin []float64
+	var yMin float64
+	precision := 0.001
+
+	rFunc := rozenbrokeOneDimensionFunction2()
+	gradFunctions := []func(xs []float64) float64{rozenbrokeFirstGrad2(),
+		rozenbroke2SecondGrad()}
+
+	var gm constraint_methods.GradientMethod
+
+	timeStart = time.Now()
+	gm.Init([]float64{2, 1}, 2, rFunc,
+		[]func(xs []float64) float64{firstConstraint, secondConstraint, thirdConstraint}, gradFunctions, A(3, 2), -10, precision, 30, "break in two")
+
+	xMin, yMin, err = gm.Solve()
+	if err != nil {
+		fmt.Printf("error solving gradient penalty method : %v\n", err)
+		return
+	}
+	timeEnd = time.Now()
+
+	fmt.Printf("minimum: %f\n", yMin)
+	for _, p := range xMin {
+		fmt.Printf("minimum point: %f ", p)
+
+	}
+	fmt.Println()
+	fmt.Printf("gradient penalty algorithm took : %v\n", timeEnd.Sub(timeStart))
+}
+
 func main() {
-	fourth()
+	sixth()
 
 }

@@ -153,12 +153,12 @@ func (m *Matrix) Copy() Matrix {
 
 func (m *Matrix) Transponate() (Matrix, error) {
 	var trM Matrix
-	if m.DimensionColumns != m.DimensionRows {
-		return Matrix{}, fmt.Errorf("matrix is not square")
-	}
-	trM.Init(m.DimensionRows, m.DimensionColumns)
-	for i := 0; i < m.DimensionRows; i++ {
-		for j := 0; j < m.DimensionColumns; j++ {
+	//if m.DimensionColumns != m.DimensionRows {
+	//	return Matrix{}, fmt.Errorf("matrix is not square")
+	//}
+	trM.Init(m.DimensionColumns, m.DimensionRows)
+	for i := 0; i < m.DimensionColumns; i++ {
+		for j := 0; j < m.DimensionRows; j++ {
 			trM.Points[i][j] = m.Points[j][i]
 		}
 	}
@@ -294,4 +294,27 @@ func (m *Matrix) Print() {
 		fmt.Println()
 	}
 	fmt.Println()
+}
+
+func (m *Matrix) RemoveRows(rows []int) (Matrix, error) {
+	var err error
+	var newPoints [][]float64
+	for i := 0; i < m.DimensionRows; i++ {
+		found := false
+		for _, r := range rows {
+			if i == r {
+				found = true
+				break
+			}
+		}
+		if !found {
+			newPoints = append(newPoints, m.Points[i])
+		}
+	}
+	var newMatrix Matrix
+	err = newMatrix.InitWithPoints(len(newPoints), m.DimensionColumns, newPoints)
+	if err != nil {
+		return Matrix{}, fmt.Errorf("error initializing vector: %v", err)
+	}
+	return newMatrix, nil
 }

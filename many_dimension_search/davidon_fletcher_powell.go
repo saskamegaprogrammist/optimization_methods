@@ -75,7 +75,7 @@ func (dfps *DavidonFletcherPowellSearch) Solve() ([]float64, float64, error) {
 			return nil, 0, fmt.Errorf("error calculcating gradient: %v", err)
 		}
 		if grad.Len() < dfps.eps1 || k >= dfps.maxIter {
-			fmt.Printf("k value: %d\n", k)
+			//fmt.Printf("k value: %d\n", k)
 			return x.Points, dfps.targetFunc(x.Points), nil
 		}
 		if k > 0 {
@@ -116,7 +116,7 @@ func (dfps *DavidonFletcherPowellSearch) Solve() ([]float64, float64, error) {
 		}
 		if xSub.Len() < dfps.delta && math.Abs(dfps.targetFunc(x.Points)-dfps.targetFunc(xOld.Points)) < dfps.eps2 {
 			if lastIter {
-				fmt.Printf("k value: %d\n", k)
+				//fmt.Printf("k value: %d\n", k)
 				return x.Points, dfps.targetFunc(x.Points), nil
 			} else {
 				lastIter = true

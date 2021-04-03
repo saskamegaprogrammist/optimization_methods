@@ -35,7 +35,7 @@ func (lms *LevenbergMarkkvadratSearch) Solve() ([]float64, float64, error) {
 	var x, xOld la_methods.Vector
 	var k int
 	var m float64
-	var grad, gradMinus, d la_methods.Vector
+	var grad, d la_methods.Vector
 	m = lms.m
 	err = x.InitWithPoints(lms.dimension, lms.startPoint)
 	if err != nil {
@@ -48,12 +48,16 @@ OUTER:
 		if err != nil {
 			return nil, 0, fmt.Errorf("error calculcating gradient: %v", err)
 		}
-		if grad.Len() < lms.eps || k >= lms.maxIterations {
-			fmt.Printf("k value: %d\n", k)
+		if grad.Len() < lms.eps {
+			//fmt.Printf("k value: %d\n", k)
 			return x.Points, lms.targetFunc(x.Points), nil
 		}
 		Hess = lms.hessian(x.Points)
 		for {
+			if k >= lms.maxIterations {
+				//fmt.Printf("k value: %d\n", k)
+				return x.Points, lms.targetFunc(x.Points), nil
+			}
 			mM.Init(lms.dimension, lms.dimension)
 			mM.E()
 			mM = mM.MulVal(m)
@@ -66,25 +70,27 @@ OUTER:
 				return nil, 0, fmt.Errorf("error inverting matrix: %v", err)
 			}
 
-			//HessInterInv.Print()
+			HessInterInv.Print()
 
-			gradMinus = grad.MulOnValue(-1)
-			d, err = HessInterInv.MulV(gradMinus)
+			//gradMinus = grad.MulOnValue(-1)
+			d, err = HessInterInv.MulV(grad)
 			if err != nil {
 				return nil, 0, fmt.Errorf("error during vector and matrix multiplying: %v", err)
 			}
 			xOld = x
-			x, err = x.Add(d)
+			x, err = x.Sub(d)
 			if err != nil {
 				return nil, 0, fmt.Errorf("error during vector adding: %v", err)
 			}
 			//fmt.Println(lms.targetFunc(x.Points))
 			if lms.targetFunc(x.Points) < lms.targetFunc(xOld.Points) {
-				k++
 				m /= 2
+				k++
 				continue OUTER
+			} else {
+				m *= 2
+				k++
 			}
-			m *= 2
 		}
 	}
 }

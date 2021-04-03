@@ -172,7 +172,7 @@ func (nms *NelderMeadSearch) Solve() ([]float64, float64, error) {
 			return []float64{}, 0, fmt.Errorf("error during checking first condition: %v", err)
 		}
 		if stopFirst && nms.checkStopSecond(vectors, min) {
-			fmt.Printf("k value: %d\n", k)
+			//fmt.Printf("k value: %d\n", k)
 			return minV.Points, nms.targetFunc(minV.Points), nil
 		}
 		if k%10 == 0 {

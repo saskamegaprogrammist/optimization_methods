@@ -63,7 +63,7 @@ func (fgd *FastGradientDescendSearch) Solve() ([]float64, float64, error) {
 			return nil, 0, fmt.Errorf("error calculcating gradient: %v", err)
 		}
 		if grad.Len() < fgd.eps1 {
-			fmt.Printf("k value: %d\n", k)
+			//fmt.Printf("k value: %d\n", k)
 			return x.Points, fgd.targetFunc(x.Points), nil
 		}
 		d = grad.MulOnValue(-1)
@@ -74,6 +74,7 @@ func (fgd *FastGradientDescendSearch) Solve() ([]float64, float64, error) {
 		} else {
 			alpha, err = fgd.oneDimensionSearch(x, d, alpha, search)
 		}
+		//fmt.Println(alpha)
 		alphaGrad = grad.MulOnValue(alpha)
 		xNew, err = x.Sub(alphaGrad)
 		if err != nil {
@@ -81,8 +82,9 @@ func (fgd *FastGradientDescendSearch) Solve() ([]float64, float64, error) {
 		}
 		f := fgd.targetFunc(x.Points)
 		fNew := fgd.targetFunc(xNew.Points)
+		//fmt.Println(fNew)
 		if alphaGrad.Len() < fgd.eps1 && math.Abs(fNew-f) < fgd.eps2 {
-			fmt.Printf("k value: %d\n", k)
+			//fmt.Printf("k value: %d\n", k)
 			return xNew.Points, fNew, nil
 		} else {
 			x = xNew

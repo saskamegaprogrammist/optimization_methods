@@ -45,7 +45,6 @@ OUTER:
 				continue OUTER
 			}
 			if sqInt.checkFirstCond(min, interpol) && sqInt.checkSecondCond(minAlph, interpolAlph) {
-				//fmt.Println(interpolAlph, interpol)
 				return interpolAlph, interpol
 			} else if checkInInterval(interpolAlph, alph1, alph3) {
 				alph1, f1, alph2, f2, alph3, f3 = sqInt.findBest(alph1, alph2, alph3,

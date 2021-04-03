@@ -21,12 +21,13 @@ type FletcherReevesSearch struct {
 	svennAlgorithm one_dimension_search.Svenn
 	oneDStep       float64
 	maxIter        int
+	pollak         bool
 }
 
 func (frs *FletcherReevesSearch) Init(startPoint []float64, delta float64, dimension int,
 	eps1 float64, eps2 float64, alphaPrecision float64,
 	oneDStep float64, maxIter int, targetFunc func(xs []float64) float64, gradient []func(xs []float64) float64,
-	method string) {
+	method string, pollak bool) {
 	frs.startPoint = startPoint
 	frs.delta = delta
 	frs.eps1 = eps1
@@ -38,6 +39,7 @@ func (frs *FletcherReevesSearch) Init(startPoint []float64, delta float64, dimen
 	frs.oneDStep = oneDStep
 	frs.maxIter = maxIter
 	frs.gradient = gradient
+	frs.pollak = pollak
 }
 
 func (frs *FletcherReevesSearch) Solve() ([]float64, float64, error) {
@@ -72,7 +74,7 @@ func (frs *FletcherReevesSearch) Solve() ([]float64, float64, error) {
 			return nil, 0, fmt.Errorf("error calculcating gradient: %v", err)
 		}
 		if grad.Len() < frs.eps1 || k >= frs.maxIter {
-			fmt.Printf("k value: %d\n", k)
+			//fmt.Printf("k value: %d\n", k)
 			return x.Points, frs.targetFunc(x.Points), nil
 		}
 		if k == 0 {
@@ -82,8 +84,14 @@ func (frs *FletcherReevesSearch) Solve() ([]float64, float64, error) {
 		if err != nil {
 			return nil, 0, fmt.Errorf("error calculcating gradient: %v", err)
 		}
-		if k%frs.dimension == 0 {
-			w = 0
+		if frs.pollak {
+			if k%frs.dimension != 0 {
+				inter, _ := grad.Sub(gradOld)
+				v, _ := inter.Mul(grad)
+				w = v / math.Pow(gradOld.Len(), 2)
+			} else {
+				w = 0
+			}
 		} else {
 			w = math.Pow(grad.Len(), 2) / math.Pow(gradOld.Len(), 2)
 		}
@@ -112,14 +120,14 @@ func (frs *FletcherReevesSearch) Solve() ([]float64, float64, error) {
 		}
 		if xSub.Len() < frs.delta && math.Abs(frs.targetFunc(x.Points)-frs.targetFunc(xOld.Points)) < frs.eps2 {
 			if lastIter {
-				fmt.Printf("k value: %d\n", k)
+				//fmt.Printf("k value: %d\n", k)
 				return x.Points, frs.targetFunc(x.Points), nil
 			} else {
 				lastIter = true
 			}
 		}
-		d = dNew
 		//fmt.Println(frs.targetFunc(x.Points))
+		d = dNew
 		k++
 	}
 }
@@ -127,6 +135,8 @@ func (frs *FletcherReevesSearch) Solve() ([]float64, float64, error) {
 func (frs *FletcherReevesSearch) calculateGradient(x la_methods.Vector) (la_methods.Vector, error) {
 	var gradPoints []float64
 	var grad la_methods.Vector
+	//fmt.Println(frs.gradient[0](x.Points))
+	//fmt.Println(frs.gradient[1](x.Points))
 	for i := 0; i < frs.dimension; i++ {
 		gradPoints = append(gradPoints, frs.gradient[i](x.Points))
 	}
