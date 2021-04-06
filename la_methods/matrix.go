@@ -190,6 +190,18 @@ func (m *Matrix) MakeTriangular() Matrix {
 	return newM
 }
 
+func (m *Matrix) MakeE() Matrix {
+	var newM Matrix
+	newM.InitWithPoints(m.DimensionRows, m.DimensionColumns, m.Points)
+	for i := 0; i < m.DimensionRows; i++ {
+		m.MakeNullColumnE(i, &newM)
+	}
+	for i := m.DimensionRows - 1; i >= 0; i-- {
+		m.MakeNullColumnEBackwards(i, &newM)
+	}
+	return newM
+}
+
 func (m *Matrix) MakeNullColumn(diagonalIndex int, newMatrix *Matrix) {
 	var newValue, koeff, newKoeff float64
 	dimension := m.DimensionColumns
@@ -204,6 +216,43 @@ func (m *Matrix) MakeNullColumn(diagonalIndex int, newMatrix *Matrix) {
 		if newKoeff != 0 {
 			for t := 0; t < dimension; t++ {
 				newValue = m.Points[k][t] - newKoeff*normLine[t]
+				newMatrix.Points[k][t] = newValue
+			}
+		}
+	}
+}
+
+func (m *Matrix) MakeNullColumnE(diagonalIndex int, newMatrix *Matrix) {
+	var newValue, koeff, newKoeff float64
+	dimension := m.DimensionColumns
+	koeff = m.Points[diagonalIndex][diagonalIndex]
+	for j := 0; j < dimension; j++ {
+		m.Points[diagonalIndex][j] /= koeff
+	}
+	for k := diagonalIndex + 1; k < m.DimensionRows; k++ {
+		newKoeff = m.Points[k][diagonalIndex]
+		if newKoeff != 0 {
+			for t := 0; t < dimension; t++ {
+				newValue = m.Points[k][t] - newKoeff*m.Points[diagonalIndex][t]
+				newMatrix.Points[k][t] = newValue
+			}
+		}
+	}
+}
+
+func (m *Matrix) MakeNullColumnEBackwards(diagonalIndex int, newMatrix *Matrix) {
+	var newValue, koeff, newKoeff float64
+	dimension := m.DimensionColumns
+	koeff = m.Points[diagonalIndex][diagonalIndex]
+
+	for j := 0; j < dimension; j++ {
+		m.Points[diagonalIndex][j] /= koeff
+	}
+	for k := diagonalIndex - 1; k >= 0; k-- {
+		newKoeff = m.Points[k][diagonalIndex]
+		if newKoeff != 0 {
+			for t := 0; t < dimension; t++ {
+				newValue = m.Points[k][t] - newKoeff*m.Points[diagonalIndex][t]
 				newMatrix.Points[k][t] = newValue
 			}
 		}

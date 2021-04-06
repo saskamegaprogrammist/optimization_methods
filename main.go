@@ -7,6 +7,7 @@ import (
 	"github.com/saskamegaprogrammist/optimization_methods/la_methods"
 	"github.com/saskamegaprogrammist/optimization_methods/many_dimension_search"
 	"github.com/saskamegaprogrammist/optimization_methods/one_dimension_search"
+	"github.com/saskamegaprogrammist/optimization_methods/simplex_methods"
 	"math"
 	"time"
 )
@@ -850,7 +851,41 @@ func sixth() {
 	fmt.Printf("gradient penalty algorithm took : %v\n", timeEnd.Sub(timeStart))
 }
 
-func main() {
-	sixth()
+func testGauss() {
+	var m, newM la_methods.Matrix
+	_ = m.InitWithPoints(3, 5, [][]float64{{1, 1, 5, 2, 4}, {5, 2, 8, 4, 3}, {9, 3, 1, 4, 9}})
+	newM = m.MakeE()
+	newM.Print()
+}
 
+func seventh() {
+	var sm simplex_methods.SimplexMethod
+	var err error
+	var timeStart, timeEnd time.Time
+	var xMin []float64
+	var yMin float64
+	timeStart = time.Now()
+	err = sm.Init(4, 2, [][]float64{{1, 3, 2, 0, 18}, {3, 5, -1, -1, 34}}, []float64{3, 2, 0, -1}, 1)
+	if err != nil {
+		fmt.Printf("error initing simplex method: %v", err)
+		return
+	}
+	xMin, yMin, err = sm.Solve()
+	if err != nil {
+		fmt.Printf("error solving simplex method: %v", err)
+		return
+	}
+	timeEnd = time.Now()
+
+	fmt.Printf("minimum: %f\n", yMin)
+	for _, p := range xMin {
+		fmt.Printf("minimum point: %f ", p)
+
+	}
+	fmt.Println()
+	fmt.Printf("simplex algorithm took : %v\n", timeEnd.Sub(timeStart))
+}
+
+func main() {
+	seventh()
 }
