@@ -239,8 +239,7 @@ func (sm *SimplexMethod) Solve() ([]float64, float64, error) {
 }
 
 func (sm *SimplexMethod) findMin(bVecNew la_methods.Vector, aVecNew la_methods.Vector) (bool, float64, int) {
-	var min = float64(100000000)
-	fmt.Print("asdasd")
+	var min = float64(100000000000)
 	var has bool
 	var minI int
 	var val float64
