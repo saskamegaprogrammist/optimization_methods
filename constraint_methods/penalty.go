@@ -2,6 +2,7 @@ package constraint_methods
 
 import (
 	"fmt"
+	"github.com/saskamegaprogrammist/optimization_methods/genetic_methods"
 	"github.com/saskamegaprogrammist/optimization_methods/la_methods"
 	"github.com/saskamegaprogrammist/optimization_methods/many_dimension_search"
 	"math"
@@ -51,6 +52,34 @@ func (ep *Penalty) Init(startPoint []float64, dimension int,
 		"pollac":                  ep.pollacSearch,
 		"davidon fletcher powell": ep.davidonFletcherPowell,
 		"levenberg":               ep.levenbergMarkkvadratSearch,
+		"genetic":                 ep.geneticAlgorithm,
+	}
+}
+
+func (ep *Penalty) InitSimple(startPoint []float64, dimension int,
+	targetFunc func(xs []float64) float64, penalties []func(xs []float64) float64,
+	gradient []func(xs []float64) float64,
+	gradientConstraint []func(xs []float64, r float64) float64,
+	constraint func(xs []float64, r float64) float64,
+	eps float64, c float64, method string) {
+	ep.startPoint = startPoint
+	ep.targetFunc = targetFunc
+	ep.dimension = dimension
+	ep.penalties = penalties
+	ep.gradient = gradient
+	ep.gradientConstraint = gradientConstraint
+	ep.constraint = constraint
+	ep.c = c
+	ep.eps = eps
+	ep.method = method
+	ep.methodMap = map[string]func(x []float64, r float64) ([]float64, float64, error){
+		"hooke jeeves":            ep.hookeJeevesSearch,
+		"fast gradient":           ep.fastGradientDescendSearch,
+		"nelder mead":             ep.nelderMeadSearch,
+		"fletcher reeves":         ep.fletcherReevesSearch,
+		"pollac":                  ep.pollacSearch,
+		"davidon fletcher powell": ep.davidonFletcherPowell,
+		"genetic":                 ep.geneticAlgorithm,
 	}
 }
 
@@ -70,7 +99,7 @@ func (ep *Penalty) Solve() ([]float64, float64, error) {
 		xMin, yMin, err = ep.methodMap[ep.method](x.Points, r)
 		//fmt.Println(xMin, yMin, ep.constraint(xMin, r))
 		if math.Abs(ep.constraint(xMin, r)) < ep.eps {
-			fmt.Printf("k value: %d\n", k)
+			//fmt.Printf("k value: %d\n", k)
 			return xMin, yMin, nil
 		} else {
 			k++
@@ -110,6 +139,21 @@ func (ep *Penalty) nelderMeadSearch(x []float64, r float64) ([]float64, float64,
 	return xMin, yMin, nil
 }
 
+func (ep *Penalty) geneticAlgorithm(x []float64, r float64) ([]float64, float64, error) {
+	var xMin []float64
+	var yMin float64
+	var err error
+	var ga genetic_methods.GeneticAlgorithm
+	ga.Init(0, 4, 1, 2000, x, ep.dimension, ep.addFunctions(ep.targetFunc, ep.constraint, r), func(xs []float64) float64 {
+		return float64(1) / ep.addFunctions(ep.targetFunc, ep.constraint, r)(xs)
+	})
+	xMin, yMin, err = ga.Solve()
+	if err != nil {
+		return nil, 0, fmt.Errorf("error solving genetic algorithm : %v\n", err)
+	}
+	return xMin, yMin, nil
+}
+
 func (ep *Penalty) fastGradientDescendSearch(x []float64, r float64) ([]float64, float64, error) {
 	var xMin []float64
 	var yMin float64
@@ -136,7 +180,7 @@ func (ep *Penalty) fletcherReevesSearchWithParam(x []float64, r float64, pollac 
 	var yMin float64
 	var err error
 	var frs many_dimension_search.FletcherReevesSearch
-	frs.Init(x, 0.001, 2, ep.eps, ep.eps, ep.eps, 0.00011, 100,
+	frs.Init(x, 0.001, 3, ep.eps, ep.eps, ep.eps, 0.00011, 100,
 		ep.addFunctions(ep.targetFunc, ep.constraint, r),
 		ep.addGradients(ep.gradient, ep.gradientConstraint, r), "golden ratio", pollac)
 	xMin, yMin, err = frs.Solve()
@@ -201,6 +245,8 @@ func (ep *Penalty) addGradients(gradient []func(xs []float64) float64,
 		return gradient[0](xs) + gradientConstraint[0](xs, r)
 	}, func(xs []float64) float64 {
 		return gradient[1](xs) + gradientConstraint[1](xs, r)
+	}, func(xs []float64) float64 {
+		return gradient[2](xs) + gradientConstraint[2](xs, r)
 	})
 	return newGrad
 }

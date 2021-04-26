@@ -160,3 +160,14 @@ func (v *Vector) Print() {
 		fmt.Printf("point %d: %f\n", i, p)
 	}
 }
+
+func (v *Vector) EqDist(vec Vector) (float64, error) {
+	if v.Dimension != vec.Dimension {
+		return 0, fmt.Errorf("vectors have different dimensions %d and %d", v.Dimension, vec.Dimension)
+	}
+	var dist float64
+	for i, point := range v.Points {
+		dist += math.Pow(point-vec.Points[i], 2)
+	}
+	return math.Sqrt(dist), nil
+}

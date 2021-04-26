@@ -95,7 +95,7 @@ func (hjs *HookeJeevesSearch) Solve() ([]float64, float64, error) {
 			return []float64{}, 0, fmt.Errorf("error during one dimension search: %v", err)
 		}
 		delta, stop = hjs.checkStop(alpha, delta, hjs.precision)
-		//fmt.Println(hjs.targetFunc(y.Points))
+		fmt.Println(hjs.targetFunc(y.Points))
 		if stop {
 			//fmt.Printf("k value: %d\n", k)
 			return y.Points, hjs.targetFunc(y.Points), nil

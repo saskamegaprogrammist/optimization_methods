@@ -226,8 +226,10 @@ func (m *Matrix) MakeNullColumnE(diagonalIndex int, newMatrix *Matrix) {
 	var newValue, koeff, newKoeff float64
 	dimension := m.DimensionColumns
 	koeff = m.Points[diagonalIndex][diagonalIndex]
-	for j := 0; j < dimension; j++ {
-		m.Points[diagonalIndex][j] /= koeff
+	if koeff != 0 {
+		for j := 0; j < dimension; j++ {
+			m.Points[diagonalIndex][j] /= koeff
+		}
 	}
 	for k := diagonalIndex + 1; k < m.DimensionRows; k++ {
 		newKoeff = m.Points[k][diagonalIndex]
@@ -244,9 +246,10 @@ func (m *Matrix) MakeNullColumnEBackwards(diagonalIndex int, newMatrix *Matrix) 
 	var newValue, koeff, newKoeff float64
 	dimension := m.DimensionColumns
 	koeff = m.Points[diagonalIndex][diagonalIndex]
-
-	for j := 0; j < dimension; j++ {
-		m.Points[diagonalIndex][j] /= koeff
+	if koeff != 0 {
+		for j := 0; j < dimension; j++ {
+			m.Points[diagonalIndex][j] /= koeff
+		}
 	}
 	for k := diagonalIndex - 1; k >= 0; k-- {
 		newKoeff = m.Points[k][diagonalIndex]

@@ -3,8 +3,11 @@ package main
 import (
 	"fmt"
 	"github.com/saskamegaprogrammist/optimization_methods/constraint_methods"
+	"github.com/saskamegaprogrammist/optimization_methods/genetic_methods"
+	"github.com/saskamegaprogrammist/optimization_methods/ideal_point_algorithms"
 	"github.com/saskamegaprogrammist/optimization_methods/interpolation_search"
 	"github.com/saskamegaprogrammist/optimization_methods/la_methods"
+	"github.com/saskamegaprogrammist/optimization_methods/many_criteria_optimization"
 	"github.com/saskamegaprogrammist/optimization_methods/many_dimension_search"
 	"github.com/saskamegaprogrammist/optimization_methods/one_dimension_search"
 	"github.com/saskamegaprogrammist/optimization_methods/simplex_methods"
@@ -23,6 +26,43 @@ func rozenbrokeOneDimensionFunction(a float64, b float64, f float64) func(xs []f
 		}
 		result += f
 		return result
+	}
+}
+
+func shekelFunc(a float64, b float64, f []float64, x0 [][]float64) func(xs []float64) float64 {
+	return func(xs []float64) float64 {
+		var result float64
+		n := len(xs)
+		for i := 0; i < n; i++ {
+			var s float64
+			for j := 0; j < n; j++ {
+				s += math.Pow(xs[j]-x0[i][j], 2)
+			}
+			result -= a / (f[i] + b*s)
+		}
+		return result
+	}
+}
+
+func funcForGeneticAlg() func(xs []float64) float64 {
+	return func(xs []float64) float64 {
+		var sum float64
+		var mul float64 = 1
+		n := len(xs)
+		for i := 0; i < n; i++ {
+			sum += math.Pow(xs[i], 2)
+			//fmt.Println(math.Sqrt(float64(i)), xs[i]/math.Sqrt(float64(i+1)))
+			mul *= math.Cos(xs[i] / math.Sqrt(float64(i+1)))
+		}
+		//fmt.Println((sum - mul) / 200)
+		return sum/float64(200) - mul + 1
+	}
+}
+
+func fitnessFuncForGeneticAlg() func(xs []float64) float64 {
+	return func(xs []float64) float64 {
+		//fmt.Println(float64(1) / funcForGeneticAlg()(xs))
+		return float64(1) / funcForGeneticAlg()(xs)
 	}
 }
 
@@ -860,12 +900,15 @@ func testGauss() {
 
 func seventh() {
 	var sm simplex_methods.SimplexMethod
+	var smr simplex_methods.SimplexMethodReal
+
 	var err error
 	var timeStart, timeEnd time.Time
 	var xMin []float64
 	var yMin float64
 	timeStart = time.Now()
-	err = sm.Init(4, 2, [][]float64{{1, 3, 2, 0, 18}, {3, 5, -1, -1, 34}}, []float64{3, 2, 0, -1}, 1)
+	err = sm.Init(4, 2, [][]float64{{1, 3, 2, 0, 18}, {3, 5, -1, -1, 34}}, []float64{3, 2, 0, -10}, 1)
+	//err = sm.Init(4, 2, [][]float64{{3, -3, 4, 2, 0}, {1, 1, 1, 3, 2}}, []float64{-1, 2, 1, 1}, 1)
 	if err != nil {
 		fmt.Printf("error initing simplex method: %v", err)
 		return
@@ -877,15 +920,172 @@ func seventh() {
 	}
 	timeEnd = time.Now()
 
+	fmt.Printf("maximum: %f\n", yMin)
+	for _, p := range xMin {
+		fmt.Printf("maximum point: %f ", p)
+
+	}
+	fmt.Println()
+	fmt.Printf("simplex algorithm took : %v\n", timeEnd.Sub(timeStart))
+
+	timeStart = time.Now()
+	err = sm.Init(4, 2, [][]float64{{1, 3, 2, 0, 18}, {3, 5, -1, -1, 34}}, []float64{3, 2, 0, -10}, 2)
+	//err = sm.Init(4, 2, [][]float64{{3, -3, 4, 2, 0}, {1, 1, 1, 3, 2}}, []float64{-1, 2, 1, 1}, 2)
+	if err != nil {
+		fmt.Printf("error initing simplex method: %v", err)
+		return
+	}
+	xMin, yMin, err = sm.Solve()
+	if err != nil {
+		fmt.Printf("error solving simplex method: %v", err)
+		return
+	}
+	timeEnd = time.Now()
+
+	fmt.Printf("maximum: %f\n", yMin)
+	for _, p := range xMin {
+		fmt.Printf("maximum point: %f ", p)
+
+	}
+	fmt.Println()
+	fmt.Printf("simplex algorithm took : %v\n", timeEnd.Sub(timeStart))
+
+	timeStart = time.Now()
+	err = smr.Init(4, 2, [][]float64{{1, 3, 2, 0, 18}, {3, 5, -1, -1, 34}}, []float64{3, 2, 0, -10}, 1)
+	//err = smr.Init(4, 2, [][]float64{{3, -3, 4, 2, 0}, {1, 1, 1, 3, 2}}, []float64{-1, 2, 1, 1}, 2)
+	if err != nil {
+		fmt.Printf("error initing simplex real method: %v", err)
+		return
+	}
+	xMin, yMin, err = smr.SolveReal()
+	if err != nil {
+		fmt.Printf("error solving simplex real method: %v", err)
+		return
+	}
+	timeEnd = time.Now()
+
+	fmt.Printf("maximum: %f\n", yMin)
+	for _, p := range xMin {
+		fmt.Printf("maximum point: %f ", p)
+
+	}
+	fmt.Println()
+	fmt.Printf("simplex real algorithm took : %v\n", timeEnd.Sub(timeStart))
+}
+
+func eighth() {
+	var err error
+	var timeStart, timeEnd time.Time
+	var xMin []float64
+	var yMin float64
+	x0 := [][]float64{{1, 2, 3}, {1, 2, 3}, {1, 2, 3}}
+	var a, b float64
+	a = 2
+	b = 3
+	f := []float64{1, 1, 1}
+	var kmm many_criteria_optimization.KMeansMultistart
+	var cpm many_criteria_optimization.CompetitivePointsMultistart
+
+	shF := shekelFunc(a, b, f, x0)
+
+	timeStart = time.Now()
+	kmm.Init([]float64{1, 2, 1}, 10, 3, 0, 5, shF)
+
+	xMin, yMin, err = kmm.Solve()
+	if err != nil {
+		fmt.Printf("error solving k means method: %v", err)
+		return
+	}
+	timeEnd = time.Now()
+
 	fmt.Printf("minimum: %f\n", yMin)
 	for _, p := range xMin {
 		fmt.Printf("minimum point: %f ", p)
 
 	}
 	fmt.Println()
-	fmt.Printf("simplex algorithm took : %v\n", timeEnd.Sub(timeStart))
+	fmt.Printf("k means algorithm took : %v\n", timeEnd.Sub(timeStart))
+
+	timeStart = time.Now()
+	cpm.Init(3, 0, 5, shF)
+
+	xMin, yMin, err = cpm.Solve()
+	if err != nil {
+		fmt.Printf("error solving competitive points method: %v", err)
+		return
+	}
+	timeEnd = time.Now()
+
+	fmt.Printf("minimum: %f\n", yMin)
+	for _, p := range xMin {
+		fmt.Printf("minimum point: %f ", p)
+
+	}
+	fmt.Println()
+	fmt.Printf("competitive points algorithm took : %v\n", timeEnd.Sub(timeStart))
+
+	//for i := 0; i < 10; i++ {
+	//	fmt.Println(float64(i) * 5 / (10 - 1))
+	//}
+
+}
+
+func ninth() {
+	var err error
+	var timeStart, timeEnd time.Time
+	var xMin []float64
+	var yMin float64
+	var ga genetic_methods.GeneticAlgorithm
+
+	timeStart = time.Now()
+	ga.Init(0.8, 20, 3, 1000, []float64{1, 1, 1}, 4, funcForGeneticAlg(), fitnessFuncForGeneticAlg())
+
+	xMin, yMin, err = ga.Solve()
+	if err != nil {
+		fmt.Printf("error solving genetic algorithm: %v", err)
+		return
+	}
+	timeEnd = time.Now()
+
+	fmt.Printf("minimum: %f\n", yMin)
+	for _, p := range xMin {
+		fmt.Printf("minimum point: %f ", p)
+
+	}
+	fmt.Println()
+	fmt.Printf("genetic algorithm took : %v\n", timeEnd.Sub(timeStart))
+}
+
+func tenth() {
+	var err error
+	var timeStart, timeEnd time.Time
+	var xMins [][]float64
+	var yMins [][]float64
+	var cm ideal_point_algorithms.ConvolutionMulticriteria
+
+	timeStart = time.Now()
+	cm.Init(3, []float64{1, 1, 1}, [][]float64{{1, 10}, {2, 9}, {3, 8}, {4, 7}, {5, 6}, {6, 5}, {7, 4}, {8, 3}, {9, 2}, {10, 1}}, []func(xs []float64) float64{firstForIdeal, secondForIdeal}, []func(xs []float64) float64{firstConstraintForIdeal, secondConstraintForIdeal}, funcForIdeal, []func(xs []float64, ideal []float64, ws []float64) float64{funcForIdealGradFirst, funcForIdealGradSecond, funcForIdealGradThird},
+		[]func(xs []float64, r float64) float64{constraintExtFuncForIdealFirstGrad(), constraintExtFuncForIdealSecondGrad(), constraintExtFuncForIdealThirdGrad()}, constraintExtForIdealFunc(firstConstraintForIdealMod, secondConstraintForIdealMod), false)
+
+	xMins, yMins, err = cm.Solve()
+	if err != nil {
+		fmt.Printf("error solving convolution multicriteria algorithm: %v", err)
+		return
+	}
+	timeEnd = time.Now()
+
+	for i, xMin := range xMins {
+		fmt.Printf("minimum: %f ", yMins[i])
+		for _, p := range xMin {
+			fmt.Printf("minimum point: %f ", p)
+		}
+		fmt.Println()
+	}
+
+	fmt.Println()
+	fmt.Printf("convolution multicriteria algorithm took : %v\n", timeEnd.Sub(timeStart))
 }
 
 func main() {
-	seventh()
+	tenth()
 }
